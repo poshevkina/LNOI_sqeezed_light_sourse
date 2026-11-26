@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="220" viewBox="0 0 1200 220">
+<rect width="1200" height="220" rx="20" fill="#0d1526"/>
+<rect x="40" y="36" width="5" height="147" rx="2" fill="#45d6c0"/>
+<text x="70" y="88" fill="#f1f5f9" font-size="39" font-family="Arial,sans-serif" font-weight="700">LNOI Waveguide · SPDC</text>
+<text x="72" y="129" fill="#aebdd3" font-size="21" font-family="Arial,sans-serif">COMSOL modes → spatial labels → dispersion → JSI &amp; Schmidt number</text>
+<text x="72" y="173" fill="#45d6c0" font-size="16" font-family="Arial,sans-serif">LiNbO₃  /  complex vector fields  /  reproducible Python workflow</text>
+<path d="M900 64 L1130 64 M900 104 L1130 104 M900 144 L1130 144" stroke="#34435c" stroke-width="2"/>
+<path d="M900 141 C955 141 963 65 1015 65 S1075 141 1130 141" stroke="#45d6c0" stroke-width="4" fill="none"/>
+<path d="M900 72 C953 72 973 141 1015 141 S1078 72 1130 72" stroke="#f7b45a" stroke-width="3" fill="none"/>
+</svg>

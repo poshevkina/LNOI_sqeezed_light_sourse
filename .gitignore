@@ -1,0 +1,18 @@
+# Generated simulation data: one current dataset, never versioned.
+/results_comsol/
+/results_polynomial/
+/archive/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.mph.lock
+*.mph.recovery/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,366 @@
+{
+  "version": 1,
+  "identity": {
+    "version": 2,
+    "is_mode_policy": "at_most_two_at_anchor",
+    "source_signature": "16eaeb5a85e3f6322594b7f8cb5b527b157a813c420122a120439d924e76b602",
+    "points": 2000,
+    "degree": 6,
+    "widths_um": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6,
+      0.7
+    ],
+    "tracking": {
+      "imag_limit": 1e-06,
+      "min_overlap": 0.9,
+      "min_margin": 0.1
+    },
+    "signal_label": "TM0",
+    "idler_label": "TE0",
+    "all_pump_labels": [
+      "TM0",
+      "TM1",
+      "TE0",
+      "TE1"
+    ],
+    "modes": [
+      {
+        "width_um": 0.45,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0059282325
+      },
+      {
+        "width_um": 0.45,
+        "pump_label": "TE0",
+        "pump_mode": 1,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9771004493
+      },
+      {
+        "width_um": 0.5,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0043035045
+      },
+      {
+        "width_um": 0.5,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0410763423
+      },
+      {
+        "width_um": 0.5,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9767945947
+      },
+      {
+        "width_um": 0.55,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.003455173
+      },
+      {
+        "width_um": 0.55,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0400398394
+      },
+      {
+        "width_um": 0.55,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9745515148
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0030334032
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0467734103
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9703829313
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TE1",
+        "pump_mode": 3,
+        "anchor_solnum": 64,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9748227414
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0022132178
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 64,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.066628088
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9491147768
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TE1",
+        "pump_mode": 3,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9644398355
+      }
+    ]
+  },
+  "inputs": [
+    [
+      "summary.csv",
+      5534,
+      1795749585632464000
+    ],
+    [
+      "../../../../field_maps/w0.45_PUMP_0.725-0.825um_21pts_81x61__4df20bd68cc27784/field.npz",
+      29197492,
+      1795745766145165700
+    ],
+    [
+      "../../../comsol/w0.4-0.7um_6widths__58b445c501cca79a/w_0.45/PUMP_raw.csv",
+      7083,
+      1795745766186763000
+    ],
+    [
+      "../../../cases/w0.45_poly6_250fs_N2000_DW0.015__d34aef3d3c577e979c8485d5/case.npz",
+      498867,
+      1795749523152187800
+    ],
+    [
+      "../../../cases/w0.45_poly6_250fs_N2000_DW0.015__0df3d511fd60ce63f8a68d4e/case.npz",
+      499901,
+      1795749527872965800
+    ],
+    [
+      "../../../../field_maps/w0.5_PUMP_0.725-0.825um_21pts_81x61__d22d07d4f971e1d8/field.npz",
+      29180354,
+      1795741649594387700
+    ],
+    [
+      "../../../comsol/w0.4-0.7um_6widths__58b445c501cca79a/w_0.5/PUMP_raw.csv",
+      7119,
+      1795745853819567100
+    ],
+    [
+      "../../../cases/w0.5_poly6_250fs_N2000_DW0.015__0b32ce9761d6196fde67bc64/case.npz",
+      498980,
+      1795749532366467000
+    ],
+    [
+      "../../../cases/w0.5_poly6_250fs_N2000_DW0.015__89e052c1a5668b0d2e4c3682/case.npz",
+      500021,
+      1795749537529173600
+    ],
+    [
+      "../../../cases/w0.5_poly6_250fs_N2000_DW0.015__b8d665c841d6e37f16827d0e/case.npz",
+      500115,
+      1795749542270285900
+    ],
+    [
+      "../../../../field_maps/w0.55_PUMP_0.725-0.825um_21pts_81x61__14e1d5a48b688c9c/field.npz",
+      29174826,
+      1795745996176440800
+    ],
+    [
+      "../../../comsol/w0.4-0.7um_6widths__58b445c501cca79a/w_0.55/PUMP_raw.csv",
+      7101,
+      1795745996220800800
+    ],
+    [
+      "../../../cases/w0.55_poly6_250fs_N2000_DW0.015__3324ed187677afb375b72783/case.npz",
+      498920,
+      1795749545912569000
+    ],
+    [
+      "../../../cases/w0.55_poly6_250fs_N2000_DW0.015__dd747b87c629fd069332f1ee/case.npz",
+      499885,
+      1795749549504079400
+    ],
+    [
+      "../../../cases/w0.55_poly6_250fs_N2000_DW0.015__44d9b5d83539e6816494c255/case.npz",
+      500167,
+      1795749553075724900
+    ],
+    [
+      "../../../../field_maps/w0.6_PUMP_0.725-0.825um_21pts_81x61__32d2eb66daf72e62/field.npz",
+      29155981,
+      1795741831411307400
+    ],
+    [
+      "../../../comsol/w0.4-0.7um_6widths__58b445c501cca79a/w_0.6/PUMP_raw.csv",
+      7144,
+      1795746088057876700
+    ],
+    [
+      "../../../cases/w0.6_poly6_250fs_N2000_DW0.015__40cb7cc3e3ac710ed96808b2/case.npz",
+      498944,
+      1795749556808505300
+    ],
+    [
+      "../../../cases/w0.6_poly6_250fs_N2000_DW0.015__d026e7b86dd84157d0fb7b77/case.npz",
+      499728,
+      1795749561216644200
+    ],
+    [
+      "../../../cases/w0.6_poly6_250fs_N2000_DW0.015__911ff8f2f4446e22937bb410/case.npz",
+      500298,
+      1795749565109266100
+    ],
+    [
+      "../../../cases/w0.6_poly6_250fs_N2000_DW0.015__3a484b344b9ca96ee968c24a/case.npz",
+      499871,
+      1795749569280437600
+    ],
+    [
+      "../../../../field_maps/w0.7_PUMP_0.725-0.825um_21pts_81x61__958f91e408c56fd0/field.npz",
+      29109881,
+      1795742001221220500
+    ],
+    [
+      "../../../comsol/w0.4-0.7um_6widths__58b445c501cca79a/w_0.7/PUMP_raw.csv",
+      7143,
+      1795746088391315800
+    ],
+    [
+      "../../../cases/w0.7_poly6_250fs_N2000_DW0.015__ff51c80f872e8cc9d0d2dd91/case.npz",
+      498978,
+      1795749573360697200
+    ],
+    [
+      "../../../cases/w0.7_poly6_250fs_N2000_DW0.015__cbd5456b2642fdbe1d72b090/case.npz",
+      499347,
+      1795749577520418500
+    ],
+    [
+      "../../../cases/w0.7_poly6_250fs_N2000_DW0.015__44486a53911c84fa6c78177b/case.npz",
+      500279,
+      1795749581296638900
+    ],
+    [
+      "../../../cases/w0.7_poly6_250fs_N2000_DW0.015__f642029808411c2b2316ad12/case.npz",
+      499593,
+      1795749585614471800
+    ]
+  ],
+  "input_paths_base": "report_dir",
+  "fraction": 0.99,
+  "mixing_limit": 0.1,
+  "rule": "equal_tail_discrete_sum_frequency_quantiles; sampled_fields_only"
+}

@@ -1,4 +1,6 @@
-# Generated simulation data: one current dataset, never versioned.
+# Local field maps, full JSA and old output directories.
+/field_maps/
+/jsa_full/
 /results_comsol/
 /results_polynomial/
 /archive/
@@ -16,3 +18,11 @@ venv/
 *.mph.recovery/
 .DS_Store
 Thumbs.db
+
+# Temporary report publication and recovery.
+/results/studies/.work-*/
+/results/studies/.previous-*/
+/results/studies/.lock-*
+
+# COMSOL run locks.
+/results/comsol/*/.run.lock

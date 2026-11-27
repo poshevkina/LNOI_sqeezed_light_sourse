@@ -77,7 +77,7 @@ class SumFrequencyTests(unittest.TestCase):
                  patch('linbo3.pump_hybridization.read_cross_section',return_value=CrossSection(.5,.1,70)), \
                  patch('linbo3.pump_hybridization.load_pair',return_value=(None,raw)), \
                  patch('linbo3.pump_hybridization.track_modes',return_value=tracked) as track, \
-                 patch('linbo3.pump_hybridization._cache_path',return_value=cache) as locate, \
+                 patch('linbo3.cached_spectra._cache_path',return_value=cache) as locate, \
                  patch('linbo3.pump_hybridization._identity',return_value=identity):
                 np.savez(cache,w_grid=omega,IMatrix=narrow)
                 report=audit_pump_hybridization(run,spatial,out,points=31)

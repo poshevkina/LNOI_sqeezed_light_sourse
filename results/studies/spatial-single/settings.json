@@ -1,0 +1,243 @@
+{
+  "identity": {
+    "version": 2,
+    "is_mode_policy": "at_most_two_at_anchor",
+    "source_signature": "16eaeb5a85e3f6322594b7f8cb5b527b157a813c420122a120439d924e76b602",
+    "points": 1501,
+    "degree": 6,
+    "widths_um": [
+      0.4,
+      0.45,
+      0.5,
+      0.55,
+      0.6,
+      0.7
+    ],
+    "tracking": {
+      "imag_limit": 1e-06,
+      "min_overlap": 0.9,
+      "min_margin": 0.1
+    },
+    "signal_label": "TM0",
+    "idler_label": "TE0",
+    "all_pump_labels": [
+      "TM0",
+      "TM1",
+      "TE0",
+      "TE1"
+    ],
+    "modes": [
+      {
+        "width_um": 0.45,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0059282325
+      },
+      {
+        "width_um": 0.45,
+        "pump_label": "TE0",
+        "pump_mode": 1,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9771004493
+      },
+      {
+        "width_um": 0.5,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0043035045
+      },
+      {
+        "width_um": 0.5,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0410763423
+      },
+      {
+        "width_um": 0.5,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9767945947
+      },
+      {
+        "width_um": 0.55,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.003455173
+      },
+      {
+        "width_um": 0.55,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0400398394
+      },
+      {
+        "width_um": 0.55,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9745515148
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0030334032
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0467734103
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9703829313
+      },
+      {
+        "width_um": 0.6,
+        "pump_label": "TE1",
+        "pump_mode": 3,
+        "anchor_solnum": 64,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9748227414
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TM0",
+        "pump_mode": 0,
+        "anchor_solnum": 62,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.0022132178
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TM1",
+        "pump_mode": 1,
+        "anchor_solnum": 64,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.066628088
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TE0",
+        "pump_mode": 2,
+        "anchor_solnum": 63,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9491147768
+      },
+      {
+        "width_um": 0.7,
+        "pump_label": "TE1",
+        "pump_mode": 3,
+        "anchor_solnum": 61,
+        "pump_hybrid": false,
+        "signal_label": "TM0",
+        "idler_label": "TE0",
+        "signal_hybrid": false,
+        "idler_hybrid": false,
+        "pump_te_fraction": 0.9644398355
+      }
+    ]
+  },
+  "pulse_fs": 2000.0,
+  "half_window": 0.0025,
+  "points": 1501,
+  "classification": {
+    "imag_limit": 1e-06,
+    "polarization_threshold": 0.9,
+    "peak_prominence": 0.08,
+    "peak_height": 0.1
+  },
+  "spectral_fraction": 0.99,
+  "mixing_limit": 0.1,
+  "state": "complete",
+  "completed_at": "2026-11-27T03:20:01.589679+00:00",
+  "comsol_run": "w0.4-0.7um_6widths__58b445c501cca79a",
+  "comsol_path": "../../comsol/w0.4-0.7um_6widths__58b445c501cca79a",
+  "model_sha256": "bba9a5646d9e0d423beb3281154434808f712143b0d4900d9e2194f4fc6d95db",
+  "pump_wavelength_um": 0.775,
+  "length_m": 0.12,
+  "started_at": "2026-11-27T03:19:33.567631+00:00"
+}

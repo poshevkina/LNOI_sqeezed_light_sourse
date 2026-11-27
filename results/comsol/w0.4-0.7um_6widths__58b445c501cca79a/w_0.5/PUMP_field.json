@@ -1,0 +1,45 @@
+{
+  "model_sha256": "bba9a5646d9e0d423beb3281154434808f712143b0d4900d9e2194f4fc6d95db",
+  "material_sha256": {
+    "n_SiO2.txt": "6eb7bcf9058132317781f6e5707a44fac399bfb844494183764e9616968d1924",
+    "no_LiNbO3.txt": "a5dcd72a249dd5340d18f59f0f5551544f755df2356bb71bc45627563076b6a2",
+    "ne_LiNbO3.txt": "44165ae583df9a60c8c2a0c7bab6622cd9b24293ffc833797f916a5a3be225d6"
+  },
+  "version": 2,
+  "width_um": 0.5,
+  "band": "PUMP",
+  "geometry": {},
+  "wavelengths_um": [
+    0.725,
+    0.73,
+    0.735,
+    0.74,
+    0.745,
+    0.75,
+    0.755,
+    0.76,
+    0.765,
+    0.77,
+    0.775,
+    0.78,
+    0.7849999999999999,
+    0.7899999999999999,
+    0.7949999999999999,
+    0.7999999999999999,
+    0.8049999999999999,
+    0.8099999999999999,
+    0.815,
+    0.82,
+    0.825
+  ],
+  "modes": null,
+  "cores": 2,
+  "field_grid": [
+    81,
+    61
+  ],
+  "field_id": "w0.5_PUMP_0.725-0.825um_21pts_81x61__d22d07d4f971e1d8",
+  "model_name": "god_save_me_compact.mph",
+  "field_sha256": "9cce91802113e0a940b778bb04ebe9d78d0a2df30aa83c9b269003bec95c15f0",
+  "npz": "../../../../field_maps/w0.5_PUMP_0.725-0.825um_21pts_81x61__d22d07d4f971e1d8/field.npz"
+}

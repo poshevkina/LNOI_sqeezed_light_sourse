@@ -14,6 +14,7 @@ from .saved_modes import load_pair
 from .polynomial import DispersionStudy
 from .study_plots import StudyPlots
 from .sweep import PulseConfig, run_sweep
+from .artifacts import write_json
 
 
 def label_key(label):
@@ -29,6 +30,7 @@ class SpatialStudy:
     tracking: dict
     signal_label: str
     idler_label: str
+    branches: pd.DataFrame
 
 
 def prepare_spatial_study(run_dir, classification, *, degree=6, tracking=None,
@@ -37,7 +39,7 @@ def prepare_spatial_study(run_dir, classification, *, degree=6, tracking=None,
     run_dir=Path(run_dir)
     manifest=json.loads((run_dir/'config.json').read_text(encoding='utf-8-sig'))
     thresholds=dict(imag_limit=1e-6,min_overlap=.9,min_margin=.1);thresholds.update(tracking or {})
-    raw_modes={};mapping={};meta=[];diagnostics=[]
+    raw_modes={};mapping={};meta=[];diagnostics=[];branches=[]
     for width in sorted(manifest['widths_um']):
         data={};rows={}
         for band in ('IS','PUMP'):
@@ -68,7 +70,7 @@ def prepare_spatial_study(run_dir, classification, *, degree=6, tracking=None,
                 anchor_solnums=[int(rows['IS'][label]['solnum']) for label in (signal_label,idler_label)],**thresholds)
         except ModeTrackingError as error:
             diagnostics.append(dict(width_um=width,band='IS',label='',message=str(error)));continue
-        pumps={};labels={};width_meta=[]; occupied={}; collisions=set()
+        pumps={};labels={};width_meta=[];pump_rows={};occupied={};collisions=set()
         for label in sorted(rows['PUMP'],key=label_key):
             row=rows['PUMP'][label]
             try:
@@ -77,6 +79,8 @@ def prepare_spatial_study(run_dir, classification, *, degree=6, tracking=None,
             except ModeTrackingError as error:
                 diagnostics.append(dict(width_um=width,band='PUMP',label=label,message=str(error)));continue
             block=len(pumps);pumps[block]=tracked.modes[0];labels[label]=block
+            pump_rows[label]=[dict(item, width_um=width, mode=block, spatial_label=label)
+                              for item in tracked.rows]
             for item in tracked.rows:
                 identifier=(item['outer_solnum'],item['solnum'])
                 if identifier in occupied:
@@ -94,6 +98,10 @@ def prepare_spatial_study(run_dir, classification, *, degree=6, tracking=None,
                 diagnostics.append(dict(width_um=width,band='PUMP',label=label,message='Две пространственные ветви назначены одному решению; обе отклонены'))
             width_meta=[item for item in width_meta if item['pump_label'] not in collisions]
         if pumps:
+            branches.extend(dict(item, width_um=width, spatial_label=(signal_label,idler_label)[item['mode']])
+                            for item in pair.rows)
+            for label in labels:
+                branches.extend(pump_rows[label])
             raw_modes[width]={'IS':pair.modes,'PUMP':pumps};mapping[width]=labels;meta.extend(width_meta)
     if not raw_modes:raise ValueError('Нет подтверждённых пространственных мод для выбранной пары. Проверь классификацию и пороги.')
     fits={};errors=[]
@@ -107,7 +115,9 @@ def prepare_spatial_study(run_dir, classification, *, degree=6, tracking=None,
                 errors.append(dict(width_um=width,degree=degree,branch=band,mode=block,RMSE=np.sqrt(np.mean(residual**2))))
     metadata=pd.DataFrame(meta)
     study=DispersionStudy(raw_modes,fits,pd.DataFrame(errors),metadata,mapping,(degree,),0,1,manifest['pump_wavelength_um'])
-    return SpatialStudy(study,metadata,pd.DataFrame(diagnostics),classification,thresholds,signal_label,idler_label)
+    issues = pd.DataFrame(diagnostics, columns=['width_um', 'band', 'label', 'message'])
+    return SpatialStudy(study, metadata, issues, classification, thresholds, signal_label, idler_label,
+                        pd.DataFrame(branches))
 
 
 def spatial_directory(run_dir, points=1501, degree=6):
@@ -134,7 +144,7 @@ def spatial_saved_is_current(run_dir,spatial,points=1501,*,allow_cached_subset=F
             and all(mode in old.get('modes',[]) for mode in current['modes']))
 
 
-def plot_spatial_dispersion(spatial,output):
+def plot_spatial_dispersion(spatial,output,*,show=True):
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     for width,bands in spatial.study.raw.items():
         fig,axes=plt.subplots(2,3,figsize=(15,8),layout='constrained')
@@ -155,22 +165,33 @@ def plot_spatial_dispersion(spatial,output):
                     axes[row,0].plot(center,poly(center),'D',color='crimson',ms=7)
             for ax in axes[row]:ax.legend(fontsize=8)
         fig.suptitle(f'w={width:g} мкм · степень {spatial.study.degrees[0]} · пространственные моды')
-        fig.savefig(output/f'disp_width_{width:g}.png',dpi=140);plt.show();plt.close(fig)
+        fig.savefig(output/f'disp_width_{width:g}.png',dpi=140)
+        if show:
+            plt.show()
+        plt.close(fig)
+
+
+def write_spatial_sweep(run_dir, spatial, pulse, output, *, cache_root=None, progress=True):
+    """Calculate one pulse in an explicit directory using the shared SPDC cache."""
+    output = Path(output)
+    manifest = json.loads((Path(run_dir) / "config.json").read_text(encoding="utf-8-sig"))
+    identity = _identity(run_dir, spatial, pulse.n_points)
+    sweep = run_sweep(spatial.study, pulse, output, length_m=manifest.get("length_m", .12),
+                      cache_root=cache_root, progress=progress)
+    summary = sweep.summary.merge(spatial.modes, on=["width_um", "pump_label", "pump_mode"],
+                                  validate="many_to_one")
+    summary["any_hybrid"] = summary[["pump_hybrid", "signal_hybrid", "idler_hybrid"]].any(axis=1)
+    summary.to_csv(output / "summary.csv", index=False)
+    write_json(output / "settings.json", dict(state="complete", identity=identity))
+    return sweep, summary
 
 
 def run_spatial_study(run_dir,spatial,points=1501):
-    output=spatial_directory(run_dir,points,spatial.study.degrees[0]);output.mkdir(parents=True,exist_ok=True)
-    (output/'settings.json').write_text(json.dumps(dict(state='running',identity=_identity(run_dir,spatial,points))),encoding='utf-8')
-    manifest=json.loads((Path(run_dir)/'config.json').read_text(encoding='utf-8-sig'))
-    pulse=PulseConfig(2000,.0025,points)
-    sweep=run_sweep(spatial.study,pulse,output,length_m=manifest.get('length_m',.12))
-    summary=sweep.summary.merge(spatial.modes,on=['width_um','pump_label','pump_mode'],validate='many_to_one')
-    summary['any_hybrid']=summary[['pump_hybrid','signal_hybrid','idler_hybrid']].any(axis=1)
-    summary.to_csv(output/'summary.csv',index=False)
-    spatial.diagnostics.to_csv(output/'spatial_diagnostics.csv',index=False)
-    spatial.classification.to_csv(output/'classification.csv',index=False)
+    output = spatial_directory(run_dir, points, spatial.study.degrees[0])
+    sweep, _ = write_spatial_sweep(run_dir, spatial, PulseConfig(2000, .0025, points), output)
+    spatial.diagnostics.to_csv(output / "spatial_diagnostics.csv", index=False)
+    spatial.classification.to_csv(output / "classification.csv", index=False)
     plot_spatial_jsi(output, spatial, cases=sweep.cases)
-    (output/'settings.json').write_text(json.dumps(dict(state='complete',identity=_identity(run_dir,spatial,points))),encoding='utf-8')
     return output
 
 
@@ -225,7 +246,7 @@ def plot_spatial_jsi(output, spatial, *, cases=None, run_dir=None, title=None):
     return output/'figures/jsi_overview.png'
 
 
-def plot_spatial_k(output, spatial=None, *, figsize=(7.2,6), dpi=150, hybridization=None, title=None, ax=None):
+def plot_spatial_k(output, spatial=None, *, figsize=(7.2,6), dpi=150, hybridization=None, title=None, ax=None, show=True):
     size=np.asarray(figsize,dtype=float)
     if size.shape!=(2,) or not np.isfinite(size).all() or np.any(size<=0):
         raise ValueError("figsize должен содержать положительные ширину и высоту в дюймах")
@@ -267,7 +288,10 @@ def plot_spatial_k(output, spatial=None, *, figsize=(7.2,6), dpi=150, hybridizat
     ax.tick_params(labelsize=13)
     ax.grid(alpha=.25);ax.legend(fontsize=12,ncol=2)
     if standalone:
-        fig.savefig(output/'schmidt_number_vs_width.png',dpi=dpi);plt.show();plt.close(fig)
+        fig.savefig(output/'schmidt_number_vs_width.png',dpi=dpi)
+        if show:
+            plt.show()
+        plt.close(fig)
 
 
 def plot_raw_spatial_labels(run_dir, inspection, classification):

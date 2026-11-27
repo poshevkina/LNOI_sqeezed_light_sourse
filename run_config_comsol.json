@@ -1,6 +1,6 @@
 {
   "model": "god_save_me_compact.mph",
-  "output_dir": "results_comsol",
+  "output_dir": "results",
   "widths_um": [
     0.5,
     0.6,

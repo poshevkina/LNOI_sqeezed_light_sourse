@@ -1,0 +1,9 @@
+{
+  "tracking": {
+    "imag_limit": 1e-06,
+    "min_overlap": 0.9,
+    "min_margin": 0.1
+  },
+  "anchor_solnums": {},
+  "imag_rule": "strict_at_every_wavelength"
+}

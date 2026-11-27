@@ -4,12 +4,13 @@ from dataclasses import asdict, dataclass
 import hashlib
 import json
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 import warnings
 
 import numpy as np
 import pandas as pd
 
+from .artifacts import relative_path, results_root_for, save_arrays
+from .case_cache import cache_case, case_paths
 from .storage import prune_cache, remove_owned
 from .polynomial import DispersionStudy, width_label
 from .spdc import calculate_spectrum, frequency_grid, omega_to_um, validate_wavelength_range
@@ -33,7 +34,23 @@ class SweepResult:
     summary: pd.DataFrame
 
 
+def _case_inputs(study, width, degree, pump_mode, pulse, length_m):
+    raw = study.raw[width]
+    fits = study.fits[width][degree]
+    modes = (raw["PUMP"][pump_mode], raw["IS"][study.signal_mode], raw["IS"][study.idler_mode])
+    polynomials = (fits["PUMP"][pump_mode], fits["IS"][study.signal_mode], fits["IS"][study.idler_mode])
+    settings = dict(pump_wavelength_um=study.pump_wavelength_um, length_m=length_m,
+                    pulse_fwhm_fs=pulse.t_fs, half_window_rad_per_fs=pulse.dw_half,
+                    points=pulse.n_points, mode_count=0)
+    return modes, polynomials, settings
+
+
 def _cache_path(folder, study, width, degree, pump_mode, pulse, length_m, save_jsa):
+    root = results_root_for(folder)
+    if root is not None:
+        path, _, _ = case_paths(root, *_case_inputs(study, width, degree, pump_mode, pulse, length_m),
+                                method=f"poly{degree}", width=width)
+        return path
     digest = hashlib.sha256()
     settings = dict(
         version=2, fit_coordinate="omega_rad_per_fs", pulse=asdict(pulse),
@@ -79,16 +96,6 @@ def _compute_case(study, width, degree, pump_mode, pulse, length_m, save_jsa):
     return payload
 
 
-def save_arrays(path, payload):
-    with NamedTemporaryFile(dir=path.parent, suffix=".npz", delete=False) as handle:
-        temporary = Path(handle.name)
-    try:
-        np.savez_compressed(temporary, **payload)
-        temporary.replace(path)
-    finally:
-        temporary.unlink(missing_ok=True)
-
-
 def run_sweep(
     study: DispersionStudy,
     pulse: PulseConfig,
@@ -98,6 +105,7 @@ def run_sweep(
     save_jsa: bool = False,
     reuse_cache: bool = True,
     progress: bool = True,
+    cache_root: Path | None = None,
 ) -> SweepResult:
     grid = frequency_grid(study.pump_wavelength_um, pulse.dw_half, pulse.n_points)
     endpoints = grid[[0, -1]]
@@ -112,31 +120,45 @@ def run_sweep(
 
     output_dir = Path(output_dir)
     cache = output_dir / "cache"
-    cache.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    results_root = Path(cache_root) if cache_root is not None else results_root_for(output_dir)
+    if results_root is None:
+        cache.mkdir(exist_ok=True)
     study.fit_errors.to_csv(output_dir / "fit_errors.csv", index=False, encoding="utf-8-sig")
     study.mode_matching.to_csv(output_dir / "mode_matching.csv", index=False, encoding="utf-8-sig")
     cases = {}
     rows = []
-    expected=[]
+    expected = []
     for width, pump_modes in study.pump_map.items():
         cases[width] = {}
         for degree in study.degrees:
             cases[width][degree] = {}
             for label, block in pump_modes.items():
-                path = _cache_path(cache, study, width, degree, block, pulse, length_m, save_jsa)
-                expected.append(path)
-                cached = reuse_cache and path.is_file()
-                if not cached:
-                    save_arrays(path, _compute_case(study, width, degree, block, pulse, length_m, save_jsa))
-                with np.load(path, allow_pickle=False) as stored:
-                    result = {key: stored[key] for key in stored.files if key not in {"IMatrix", "fMatrix"}}
+                case_key = None
+                if results_root is not None:
+                    modes, fits, settings = _case_inputs(study, width, degree, block, pulse, length_m)
+                    path, full, signature = case_paths(results_root, modes, fits, settings,
+                                                       method=f"poly{degree}", width=width)
+                    case_key = signature["case_key"]
+                    result, cached = cache_case(
+                        path, full, signature, lambda: calculate_spectrum(*modes, fits=fits, **settings),
+                        reuse=reuse_cache,
+                    )
+                else:
+                    path = _cache_path(cache, study, width, degree, block, pulse, length_m, save_jsa)
+                    expected.append(path)
+                    cached = reuse_cache and path.is_file()
+                    if not cached:
+                        save_arrays(path, _compute_case(study, width, degree, block, pulse, length_m, save_jsa))
+                    with np.load(path, allow_pickle=False) as stored:
+                        result = {key: stored[key] for key in stored.files if key not in {"IMatrix", "fMatrix"}}
                 result["cache_path"] = path
                 result["pump_mode"] = block
                 cases[width][degree][label] = result
                 rows.append(dict(
                     t_fs=pulse.t_fs, width_um=width, degree=degree, pump_label=label, pump_mode=block,
                     signal_mode=study.signal_mode, idler_mode=study.idler_mode, N_POINTS=pulse.n_points,
-                    DW=pulse.dw_half, **{k: float(result[k]) for k in (
+                    DW=pulse.dw_half, case_key=case_key, npz=relative_path(output_dir, path), **{k: float(result[k]) for k in (
                         "K", "Lambda_um", "Lambda_signed_um", "delta_k0_per_m", "border_fraction"
                     )},
                 ))
@@ -144,7 +166,8 @@ def run_sweep(
                     note = " [кэш]" if cached else ""
                     print(f"{width_label(width)} | d={degree} | PUMP {label} | K={result['K']:.5f}{note}",
                           flush=True)
-    prune_cache(cache,expected)
+    if results_root is None:
+        prune_cache(cache,expected)
     # The sweep now represents one current pulse/window/grid configuration.
     for path in output_dir.glob('summary_t_*.csv'):remove_owned(path,output_dir)
     if (output_dir/'figures').exists():remove_owned(output_dir/'figures',output_dir)

@@ -11,6 +11,9 @@ import numpy as np
 from .modes import ModalSolutions
 
 
+MATERIAL_TABLES = {'int1': 'n_SiO2.txt', 'int2': 'no_LiNbO3.txt', 'int3': 'ne_LiNbO3.txt'}
+
+
 @contextmanager
 def _progress(client, log: Path, label: str, interval: float = 10.0):
     finished = Event()
@@ -58,11 +61,10 @@ def _progress(client, log: Path, label: str, interval: float = 10.0):
 def _import_project_materials(model,model_file):
     """Override historical file addresses in MPH with local relative filenames."""
     directory=Path(model_file).resolve().parent
-    tables={'int1':'n_SiO2.txt','int2':'no_LiNbO3.txt','int3':'ne_LiNbO3.txt'}
-    for filename in tables.values():
+    for filename in MATERIAL_TABLES.values():
         if not (directory/filename).is_file():raise FileNotFoundError(directory/filename)
     model.java.modelPath(str(directory))
-    for tag,filename in tables.items():
+    for tag,filename in MATERIAL_TABLES.items():
         function=model.java.component('comp1').func(tag)
         function.set('filename',filename)
         function.importData()

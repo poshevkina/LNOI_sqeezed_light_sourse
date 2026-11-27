@@ -1,0 +1,37 @@
+{
+  "pump_wavelength_um": 0.775,
+  "length_m": 0.12,
+  "pulse_fwhm_fs": 2000.0,
+  "half_window_rad_per_fs": 0.0025,
+  "points": 1501,
+  "mode_count": 0,
+  "methods": [
+    "poly1",
+    "poly2",
+    "poly3",
+    "poly4",
+    "poly5",
+    "poly6"
+  ],
+  "tracking": {
+    "imag_limit": 1e-06,
+    "min_overlap": 0.9,
+    "min_margin": 0.1
+  },
+  "anchor_solnums": {},
+  "widths_um": null,
+  "pump_modes": null,
+  "signal_mode": 0,
+  "idler_mode": 1,
+  "cache_version": 3,
+  "comsol_run": "w0.4-0.7um_6widths__58b445c501cca79a",
+  "fit_coordinate": "omega_rad_per_fs",
+  "imag_rule": "strict_at_every_wavelength",
+  "source_signature": "16eaeb5a85e3f6322594b7f8cb5b527b157a813c420122a120439d924e76b602",
+  "state": "complete",
+  "comsol_path": "../../comsol/w0.4-0.7um_6widths__58b445c501cca79a",
+  "model_sha256": "bba9a5646d9e0d423beb3281154434808f712143b0d4900d9e2194f4fc6d95db",
+  "started_at": "2026-11-27T03:20:05.695649+00:00",
+  "coverage": "partial",
+  "completed_at": "2026-11-27T03:20:45.485289+00:00"
+}

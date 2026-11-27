@@ -1,0 +1,13 @@
+﻿width_um,band,comsol_state,analysis_state,message,n_branches
+0.4,PUMP,complete,tracked,,2
+0.4,IS,complete,ambiguous,IS 1.61 мкм: недостаточно решений с |Im(n_eff)| < 1e-06 и конечным ненулевым полем. Доступны 97: 1.7879146-1.2465505e-09j,0
+0.45,PUMP,complete,ambiguous,"PUMP 0.82 мкм: недостаточно решений с |Im(n_eff)| < 1e-06 и конечным ненулевым полем. Доступны 115: 2.0510206+1.0253851e-16j, 116: 2.1093386+1.2478564e-17j",0
+0.45,IS,complete,tracked,,2
+0.5,PUMP,complete,tracked,,3
+0.5,IS,complete,tracked,,2
+0.55,PUMP,complete,tracked,,3
+0.55,IS,complete,tracked,,2
+0.6,PUMP,complete,tracked,,4
+0.6,IS,complete,tracked,,2
+0.7,PUMP,complete,tracked,,4
+0.7,IS,complete,tracked,,2

@@ -1,0 +1,45 @@
+{
+  "model_sha256": "bba9a5646d9e0d423beb3281154434808f712143b0d4900d9e2194f4fc6d95db",
+  "material_sha256": {
+    "n_SiO2.txt": "6eb7bcf9058132317781f6e5707a44fac399bfb844494183764e9616968d1924",
+    "no_LiNbO3.txt": "a5dcd72a249dd5340d18f59f0f5551544f755df2356bb71bc45627563076b6a2",
+    "ne_LiNbO3.txt": "44165ae583df9a60c8c2a0c7bab6622cd9b24293ffc833797f916a5a3be225d6"
+  },
+  "version": 2,
+  "width_um": 0.5,
+  "band": "IS",
+  "geometry": {},
+  "wavelengths_um": [
+    1.45,
+    1.46,
+    1.47,
+    1.48,
+    1.49,
+    1.5,
+    1.51,
+    1.52,
+    1.53,
+    1.54,
+    1.55,
+    1.56,
+    1.5699999999999998,
+    1.5799999999999998,
+    1.5899999999999999,
+    1.5999999999999999,
+    1.6099999999999999,
+    1.6199999999999999,
+    1.63,
+    1.64,
+    1.65
+  ],
+  "modes": null,
+  "cores": 2,
+  "field_grid": [
+    81,
+    61
+  ],
+  "field_id": "w0.5_IS_1.45-1.65um_21pts_81x61__4c2c83cfacbcb5b7",
+  "model_name": "god_save_me_compact.mph",
+  "field_sha256": "a7df520dc659f178d85790e61453b71d799cb764cd02e8cad06e0b4baf5b0225",
+  "npz": "../../../../field_maps/w0.5_IS_1.45-1.65um_21pts_81x61__4c2c83cfacbcb5b7/field.npz"
+}

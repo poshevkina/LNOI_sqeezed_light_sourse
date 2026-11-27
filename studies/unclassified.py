@@ -1,6 +1,13 @@
 """Compare K across widths by local PUMP rank and one polynomial degree."""
 
 from pathlib import Path
+import sys
+
+
+if __package__ in (None, ""):
+    # Direct execution puts the studies directory on the import path.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 
 from linbo3.artifacts import read_json, utc_now, write_json
 from linbo3.interpolation_plots import plot_k_by_width

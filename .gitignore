@@ -23,3 +23,6 @@ Thumbs.db
 /results/studies/.work-*/
 /results/studies/.previous-*/
 /results/studies/.lock-*
+
+# COMSOL run locks.
+/results/comsol/*/.run.lock

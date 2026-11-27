@@ -4,14 +4,13 @@ from pathlib import Path
 import sys
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if __package__ in (None, ""):
     # Direct execution puts the studies directory on the import path.
-    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from linbo3.interpolation import METHODS
 from linbo3.interpolation_study import run_study
-from studies._common import study_main
+from studies._common import PROJECT_ROOT, study_main
 
 
 STUDY_NAME = "fit-effect"

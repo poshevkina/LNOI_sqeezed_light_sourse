@@ -1,6 +1,13 @@
 """Compare spatially classified SPDC across a series of pump durations."""
 
 from pathlib import Path
+import sys
+
+
+if __package__ in (None, ""):
+    # Direct execution puts the studies directory on the import path.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 
 import pandas as pd
 

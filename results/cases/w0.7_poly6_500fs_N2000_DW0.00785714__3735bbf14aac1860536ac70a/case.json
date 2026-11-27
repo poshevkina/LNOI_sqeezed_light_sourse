@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "c_m_per_fs": 3e-07,
+  "fit_coordinate": "omega_rad_per_fs",
+  "width_um": 0.7,
+  "method": "poly6",
+  "pump_wavelength_um": 0.775,
+  "length_m": 0.12,
+  "pulse_fwhm_fs": 500.0,
+  "half_window_rad_per_fs": 0.007857142857142856,
+  "points": 2000,
+  "mode_count": 0,
+  "extrapolate": false,
+  "case_key": "3735bbf14aac1860536ac70aaefed4411eb3d6ac693244f72c2eaf470f422a35"
+}

@@ -2,8 +2,10 @@ from .storage import analysis_root
 """Inspect completed COMSOL exports, with auditable selection and no solver calls."""
 
 from dataclasses import dataclass
+from hashlib import file_digest
 import json
 from pathlib import Path
+from zipfile import BadZipFile
 
 import numpy as np
 import pandas as pd
@@ -29,19 +31,39 @@ class ModeInspection:
     anchor_solnums: dict
 
 
-def field_path(directory, band):
-    directory = Path(directory)
+def load_modal_npz(path, *, expected_sha256=None):
+    """Verify and decode the same open file, even if its path is replaced."""
+    with Path(path).open("rb") as stream:
+        if expected_sha256 is not None:
+            if file_digest(stream, "sha256").hexdigest() != expected_sha256:
+                raise ValueError(f"Контрольная сумма SHA-256 карты не совпадает: {path}")
+            stream.seek(0)
+        try:
+            with np.load(stream, allow_pickle=False) as file:
+                return ModalSolutions(**{name: file[name] for name in ModalSolutions.__annotations__})
+        except (BadZipFile, KeyError, ValueError, TypeError, EOFError) as error:
+            raise ValueError(f"Не удалось прочитать карту полей {path}: {error}") from error
+
+
+def _field_reference(directory, band):
     reference = directory / f"{band}_field.json"
     if reference.is_file():
-        return (directory / read_json(reference)["npz"]).resolve()
+        metadata = read_json(reference)
+        return (directory / metadata["npz"]).resolve(), metadata.get("field_sha256") or ""
     # Standalone modal fixtures may place both inputs alongside each other.
-    return directory / f"{band}_raw.npz"
+    return directory / f"{band}_raw.npz", None
+
+
+def field_path(directory, band):
+    path, _ = _field_reference(Path(directory), band)
+    return path
 
 
 def load_pair(directory, band, wavelengths):
+    directory = Path(directory)
     table = pd.read_csv(directory / f"{band}_raw.csv", float_precision="round_trip")
-    with np.load(field_path(directory, band), allow_pickle=False) as file:
-        raw = ModalSolutions(**{name: file[name] for name in ModalSolutions.__annotations__})
+    path, checksum = _field_reference(directory, band)
+    raw = load_modal_npz(path, expected_sha256=checksum)
     for column in ("outer_solnum", "solnum"):
         if not np.array_equal(table[column], getattr(raw, column)):
             raise ValueError(f"{band}: идентификаторы решений в CSV и NPZ различаются")

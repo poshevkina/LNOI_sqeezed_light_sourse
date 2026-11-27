@@ -14,7 +14,7 @@ from studies._common import study_main
 
 
 STUDY_NAME = "fit-effect-w04-w07"
-WIDTHS_UM = (0.4, 0.5, 0.6, 0.7)
+WIDTHS_UM = (0.4, 0.45, 0.5, 0.55, 0.6, 0.7)
 
 
 def run(source, results_root, *, points=fit_effect.POINTS):

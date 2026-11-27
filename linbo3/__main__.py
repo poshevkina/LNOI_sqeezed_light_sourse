@@ -1,4 +1,4 @@
-"""Run the COMSOL-to-figures workflow."""
+"""Export COMSOL fields. Run analysis separately via python -m studies.<name>."""
 
 import argparse
 from pathlib import Path
@@ -10,7 +10,7 @@ from .pipeline import run
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, type=Path)
-    parser.add_argument("--stage", choices=("all", "comsol"), default="all")
+    parser.add_argument("--stage", choices=("comsol",), default="comsol")
     args = parser.parse_args()
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):

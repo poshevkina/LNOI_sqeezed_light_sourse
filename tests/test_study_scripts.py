@@ -1,6 +1,8 @@
 """Small end-to-end examples for all four Python studies."""
 
 from pathlib import Path
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 import unittest
@@ -38,6 +40,19 @@ def write_spatial_fields(source):
 
 
 class PythonStudies(unittest.TestCase):
+    def test_direct_entry_points_import_from_outside_the_project(self):
+        scripts = Path(__file__).resolve().parents[1] / "studies"
+        with TemporaryDirectory() as directory:
+            for name in ("fit_effect", "fit_effect_04_07", "unclassified", "spatial_single", "pulse_series"):
+                with self.subTest(study=name):
+                    result = subprocess.run(
+                        [sys.executable, "-E", str(scripts / f"{name}.py"), "--help"],
+                        cwd=directory, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                        timeout=20,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("--results-root", result.stdout)
+
     def test_saved_comsol_to_reports_and_shared_spdc_cases(self):
         with TemporaryDirectory() as temporary:
             base = Path(temporary)

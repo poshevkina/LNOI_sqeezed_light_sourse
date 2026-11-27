@@ -8,32 +8,11 @@ import pandas as pd
 
 from .frequency import LIGHT_SPEED_M_PER_FS
 from .modes import track_modes
-from .saved_modes import load_pair
+from .saved_modes import field_path, load_pair
 from .mode_classification import classify_field, read_cross_section
 from .spatial_workflow import _identity, spatial_saved_is_current
-from .sweep import PulseConfig, _cache_path
-
-
-def sum_frequency_distribution(omega, jsi):
-    """Sum anti-diagonals: IMatrix[idler,signal], constant omega_i+omega_s.
-
-    Probabilities use the original rectangle-sum quadrature (domega**2).
-    Return bin centres and normalized probability mass, without interpolation.
-    """
-    omega=np.asarray(omega,dtype=float);jsi=np.asarray(jsi,dtype=float)
-    if (omega.ndim!=1 or len(omega)<3 or jsi.shape!=(len(omega),len(omega))
-            or not np.isfinite(omega).all() or np.any(omega<=0)
-            or np.any(np.diff(omega)<=0) or not np.isfinite(jsi).all() or np.any(jsi<0)):
-        raise ValueError('Нужны конечная JSI[idler,signal] и возрастающая положительная ω')
-    step=np.diff(omega)[0]
-    if not np.allclose(np.diff(omega),step,rtol=1e-8,atol=1e-14):
-        raise ValueError('Для суммирования антидиагоналей нужна равномерная сетка ω')
-    mass=np.zeros(2*len(omega)-1)
-    for row,values in enumerate(jsi):
-        mass[row:row+len(omega)]+=values
-    total=mass.sum()
-    if not np.isfinite(total) or total<=0:raise ValueError('JSI должна иметь ненулевой конечный интеграл')
-    return 2*omega[0]+step*np.arange(len(mass)),mass/total
+from .cached_spectra import cached_case
+from .spectral_projections import saved_sum_frequency, sum_frequency_distribution
 
 
 def contribution_interval(omega_sum, mass, fraction=.99):
@@ -86,24 +65,16 @@ def audit_pump_hybridization(run_dir,spatial,output,*,points=1501,fraction=.99,m
     for width,mapping in spatial.study.pump_map.items():
         directory=run_dir/f'w_{width:g}'
         _,raw=load_pair(directory,'PUMP',manifest['wavelengths_um']['PUMP'])
-        paths.extend([directory/'PUMP_raw.npz',directory/'PUMP_raw.csv'])
+        paths.extend([field_path(directory, 'PUMP'),directory/'PUMP_raw.csv'])
         for label,block in mapping.items():
             part=summary.loc[summary.width_um.eq(width)&summary.pump_label.eq(label)]
             if len(part)!=1:raise ValueError(f'Неоднозначные данные JSI: w={width:g}, {label}')
             case=part.iloc[0]
             if int(case.N_POINTS)!=points:raise ValueError('Сетка JSI не соответствует STUDY_POINTS')
-            duration=float(case.t_fs)
-            # Legacy cache hashes distinguish JSON 2000 from 2000.0. Both encode
-            # the same duration; resolve exact keys without changing solver data.
-            durations=[int(duration),duration] if duration.is_integer() else [duration]
-            for value in durations:
-                pulse=PulseConfig(value,float(case.DW),int(case.N_POINTS))
-                path=_cache_path(cache,spatial.study,width,spatial.study.degrees[0],block,pulse,manifest.get('length_m',.12),False)
-                if path.is_file():break
-            if not path.is_file():raise FileNotFoundError(f'Нет полной JSI: {path}')
+            path, pulse = cached_case(cache, spatial, width, label, part, manifest, points)
             paths.append(path)
             with np.load(path,allow_pickle=False) as saved:
-                omega,mass=sum_frequency_distribution(saved['w_grid'],saved['IMatrix'])
+                omega,mass=saved_sum_frequency(saved)
             low,high,actual=contribution_interval(omega,mass,fraction)
             lambda_min,lambda_max=constant/high,constant/low
             meta=spatial.modes.loc[spatial.modes.width_um.eq(width)&spatial.modes.pump_label.eq(label)].iloc[0]

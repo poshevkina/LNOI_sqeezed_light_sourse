@@ -3,7 +3,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 
-from .interpolation import LABELS, METHODS
+from .interpolation import LABELS
 from .frequency import um_to_omega
 
 
@@ -55,7 +55,7 @@ def plot_fits(path, width, bands, fits):
         x = um_to_omega(data.wavelength_um)
         dense = np.linspace(x.min(), x.max(), 600)
         ax.scatter(x, data.neff, s=10, color="black", zorder=10, label="COMSOL")
-        for method in METHODS:
+        for method in fits[band][mode]:
             ax.plot(dense, fits[band][mode][method](dense), lw=1.1, label=LABELS[method])
         ax.set(title=f"{band} · ветвь {mode}", xlabel="ω, рад/фс", ylabel="Re(n_eff)")
         ax.ticklabel_format(axis="y", useOffset=False)
@@ -80,7 +80,7 @@ def plot_derivatives(path, width, bands, fits):
         omega = um_to_omega(data.wavelength_um)
         dense = np.linspace(omega.min(), omega.max(), 600)
         for order, ax in enumerate(axes[row]):
-            for method in METHODS:
+            for method in fits[band][mode]:
                 ax.plot(dense, fits[band][mode][method].deriv(order)(dense), lw=1.15, label=LABELS[method])
             if order == 0:
                 ax.scatter(omega, data.neff, s=9, color="black", zorder=10)
@@ -95,7 +95,7 @@ def plot_derivatives(path, width, bands, fits):
 
 def plot_schmidt(output, title, cases):
     fig, axes = plt.subplots(4, 2, figsize=(13, 11), layout="constrained", sharex=True)
-    for method in METHODS:
+    for method in cases:
         case = cases[method]
         omega = case["omega_rad_per_fs"]
         delta = omega - (omega[0] + omega[-1]) / 2
@@ -118,7 +118,7 @@ def plot_schmidt(output, title, cases):
     _save(fig, output / "schmidt_modes.png")
 
     fig, ax = plt.subplots(figsize=(9, 5), layout="constrained")
-    for method in METHODS:
+    for method in cases:
         weights = cases[method]["schmidt_weights"][:30]
         ax.semilogy(np.arange(1, len(weights) + 1), np.where(weights > 0, weights, np.nan),
                     ".-", label=f"{LABELS[method]} · K={float(cases[method]['K']):.3f}")
@@ -129,8 +129,11 @@ def plot_schmidt(output, title, cases):
 
 
 def plot_jsi_comparison(output, title, cases):
-    fig, axes = plt.subplots(2, 3, figsize=(13, 7.5), layout="constrained", sharex=True, sharey=True)
-    for ax, method in zip(axes.ravel(), METHODS):
+    columns = min(3, len(cases))
+    rows = (len(cases) + columns - 1) // columns
+    fig, axes = plt.subplots(rows, columns, figsize=(4.3 * columns, 3.7 * rows),
+                             squeeze=False, layout="constrained", sharex=True, sharey=True)
+    for ax, method in zip(axes.ravel(), cases):
         case = cases[method]
         grid = case["plot_omega_rad_per_fs"]
         detuning = grid - (grid[0] + grid[-1]) / 2
@@ -139,6 +142,59 @@ def plot_jsi_comparison(output, title, cases):
         ax.set(title=f"{LABELS[method]} · K={float(case['K']):.4f}",
                xlabel="Signal Δω, рад/фс", ylabel="Idler Δω, рад/фс")
         ax.label_outer()
-    fig.colorbar(im, ax=axes.ravel()[:len(METHODS)], label="JSI")
+    for ax in axes.ravel()[len(cases):]:
+        ax.set_visible(False)
+    fig.colorbar(im, ax=axes.ravel()[:len(cases)], label="JSI")
     fig.suptitle(title)
     _save(fig, output / "jsi_comparison.png")
+
+
+
+def plot_k_by_fit(path, summary, methods):
+    """Compare fit methods within each width, keeping local PUMP identities explicit."""
+    widths = sorted(summary["width_um"].unique())
+    if not widths:
+        return
+    cols = min(3, len(widths))
+    rows = (len(widths) + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols, figsize=(4.5 * cols, 3.4 * rows),
+                             squeeze=False, layout="constrained")
+    for ax, width in zip(axes.ravel(), widths):
+        part = summary.loc[summary["width_um"].eq(width)]
+        for mode, branch in part.groupby("pump_mode"):
+            values = branch.set_index("method")["K"].reindex(methods)
+            ax.plot(range(len(methods)), values, "o-", label=f"PUMP {mode}")
+        ax.set(title=f"w = {width:g} мкм", ylabel="Число Шмидта K",
+               xticks=range(len(methods)), xticklabels=[LABELS[m] for m in methods])
+        ax.tick_params(axis="x", labelrotation=30)
+        ax.legend(fontsize=8)
+        ax.grid(alpha=.25)
+    for ax in axes.ravel()[len(widths):]:
+        ax.set_visible(False)
+    _save(fig, path)
+
+
+def plot_k_by_width(path, summary, methods, widths):
+    """Compare methods by local PUMP rank, with gaps where a rank is unavailable."""
+    if summary.empty:
+        return
+    ranks = sorted(summary.pump_rank.unique())
+    columns = min(len(ranks), 3)
+    rows = (len(ranks) + columns - 1) // columns
+    fig, axes = plt.subplots(rows, columns, figsize=(4.8 * columns, 3.6 * rows),
+                             squeeze=False, layout="constrained")
+    try:
+        for ax, rank in zip(axes.flat, ranks):
+            ranked = summary.loc[summary.pump_rank.eq(rank)]
+            for method in methods:
+                values = ranked.loc[ranked.method.eq(method)].set_index("width_um").K.reindex(widths)
+                ax.plot(widths, values, "o-", label=LABELS[method])
+            ax.set(title=f"PUMP · ранг {rank}", xlabel="Ширина, мкм", ylabel="Число Шмидта K", xticks=widths)
+            ax.legend(fontsize=8)
+            ax.grid(alpha=.25)
+        for ax in list(axes.flat)[len(ranks):]:
+            ax.set_visible(False)
+        fig.suptitle("Ранг PUMP задан по n_eff в опоре отдельно для каждой ширины")
+        fig.savefig(path, dpi=140)
+    finally:
+        plt.close(fig)

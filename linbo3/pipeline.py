@@ -1,42 +1,23 @@
 """Orchestrate and checkpoint the COMSOL-to-figures calculation."""
 
-import hashlib
-import json
-import os
 from pathlib import Path
-import shutil
 import traceback
 from zipfile import BadZipFile
-from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pandas as pd
 
-from .storage import remove_owned, analysis_root
-from .comsol import solve_modal_fields
+from .artifacts import digest_json, file_hash, read_json, relative_path, save_arrays, utc_now, write_csv, write_json
+from .comsol import MATERIAL_TABLES, solve_modal_fields
 from .modes import ModalSolutions, ModeTrackingError, track_modes
 from .polynomial import fit_study
+from .saved_modes import load_pair
 from .spdc import frequency_grid, omega_to_um
-from .sweep import PulseConfig, run_sweep, save_arrays
+from .sweep import PulseConfig, run_sweep
 
 
 BANDS = ("PUMP", "IS")
-EXTRACTION_VERSION = 1
-
-
-def _digest(settings):
-    payload = json.dumps(settings, sort_keys=True, allow_nan=False).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()[:20]
-
-
-def _write_json(path, value):
-    with NamedTemporaryFile(dir=path.parent, delete=False, mode="w", encoding="utf-8") as f:
-        temporary = Path(f.name)
-        json.dump(value, f, indent=2, ensure_ascii=False)
-    try:
-        temporary.replace(path)
-    finally:
-        temporary.unlink(missing_ok=True)
+EXTRACTION_VERSION = 2
 
 
 def _read_raw(path):
@@ -49,7 +30,7 @@ def _save_raw_csv(path, raw):
         wavelength_um=raw.wavelength_um, outer_solnum=raw.outer_solnum, solnum=raw.solnum,
         neff_real=raw.neff.real, neff_imag=raw.neff.imag,
     ))
-    data.to_csv(path, index=False, encoding="utf-8-sig", na_rep="NaN")
+    write_csv(path, data, encoding="utf-8-sig", na_rep="NaN")
 
 
 def _validate_solver_config(config):
@@ -122,71 +103,68 @@ def _validate_analysis_config(config):
     return pulses
 
 
+def _solver_source(model):
+    return dict(model_sha256=file_hash(model), material_sha256={
+        filename: file_hash(model.parent / filename) for filename in MATERIAL_TABLES.values()
+    })
+
+
 def run(config_file: Path, *, stage: str = "all") -> Path:
     config_file = Path(config_file).resolve(strict=True)
-    config = json.loads(config_file.read_text(encoding="utf-8-sig"))
+    config = read_json(config_file)
     try:
         if stage not in ("all", "comsol"):
             raise ValueError(f"Неизвестный этап {stage}")
         widths = _validate_solver_config(config)
-        grids = _solver_grids(config, exact_count=stage == "comsol")
+        grids = _solver_grids(config, exact_count=True)
         pulses = _validate_analysis_config(config) if stage == "all" else None
         model = (config_file.parent / config["model"]).resolve(strict=True)
         output = (config_file.parent / config["output_dir"]).resolve()
     except (KeyError, TypeError) as error:
         raise ValueError(f"Проверь поля файла настроек {config_file}: {error}") from error
-    with model.open("rb") as stream:
-        model_hash = hashlib.file_digest(stream, "sha256").hexdigest()
 
-    settings = dict(config)
-    settings.pop("model")
-    settings.pop("output_dir")
-    identity = dict(model_sha256=model_hash, version=EXTRACTION_VERSION, config=settings)
-    if stage == "comsol":
-        identity["stage"] = stage
-    else:
-        identity["analysis_version"] = "polynomial-omega-strict-imag-v2"
-    run_key = _digest(identity)
-    run_dir = output / "current"
-    # Keep unchanged raw bands reusable, replace every derived analysis on a
-    # change of the COMSOL configuration. No additional run directory is made.
-    old_path=run_dir/'config.json'
-    if old_path.is_file():
-        old=json.loads(old_path.read_text(encoding='utf-8-sig'))
-        changed=any(old.get(k)!=v for k,v in config.items() if k not in {'model','output_dir'}) or old.get('model_sha256')!=model_hash
-        if changed:
-            for child in run_dir.iterdir():
-                if child.is_dir() and not child.name.startswith('w_'):remove_owned(child,run_dir)
-            keep={f'w_{w:g}' for w in widths}
-            for child in run_dir.glob('w_*'):
-                if child.is_dir() and child.name not in keep:remove_owned(child,run_dir)
+    source = _solver_source(model)
+    solver = {key: config[key] for key in ("geometry", "modes", "cores", "field_grid", "pump_wavelength_um")}
+    identity = dict(**source, **solver, version=EXTRACTION_VERSION, widths_um=widths,
+                    wavelengths_um={band: grid.tolist() for band, grid in grids.items()})
+    run_id = f"w{widths[0]:g}-{widths[-1]:g}um_{len(widths)}widths__{digest_json(identity)[:16]}"
+    run_dir = output / "comsol" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     print(f"RESULT_DIR={run_dir}", flush=True)
-    manifest = {**config, "model": Path(os.path.relpath(model,run_dir)).as_posix(), "model_path_base": "run_dir", "model_sha256": model_hash,
-                "stage": stage, "wavelengths_um": {band: grid.tolist() for band, grid in grids.items()}}
-    _write_json(run_dir / "config.json", manifest)
-    status = {"state": "running", "widths": {}}
-    if stage == "comsol":
-        status["pairs"] = {_width_key(width): {band: {"state": "pending"} for band in BANDS}
-                           for width in widths}
-    _write_json(run_dir / "status.json", status)
+    manifest = dict(**identity, run_id=run_id, stage="comsol",
+                    model=relative_path(run_dir, model), model_path_base="run_dir")
+    write_json(run_dir / "config.json", manifest)
+    status_path = run_dir / "status.json"
+    previous = read_json(status_path) if status_path.is_file() else {}
+    status = {"state": "running", "widths": previous.get("widths", {}), "pairs": {
+        _width_key(width): previous.get("pairs", {}).get(
+            _width_key(width), {band: {"state": "pending"} for band in BANDS}
+        ) for width in widths
+    }}
+    write_json(status_path, status)
     try:
-        if stage == "comsol":
-            _run_comsol(config, model, model_hash, output, run_dir, widths, grids, status)
-        else:
-            _calculate(config, model, model_hash, output, run_dir, widths, grids, pulses, status)
+        _run_comsol(config, model, source, output, run_dir, widths, grids, status)
     except BaseException as error:
         status["state"] = "interrupted" if isinstance(error, KeyboardInterrupt) else "failed"
         status["error"] = str(error)
-        _write_json(run_dir / "status.json", status)
+        write_json(status_path, status)
         raise
-    status["state"] = "complete"
-    _write_json(run_dir / "status.json", status)
+    status.update(state="complete", completed_at=utc_now())
+    write_json(status_path, status)
+    if pulses is not None:
+        params = {key: config[key] for key in (
+            "degrees", "length_m", "pulses", "min_overlap", "min_margin", "imag_limit", "anchor_solnums"
+        )}
+        recipe = dict(comsol_run=run_id, **params)
+        report = output / "studies" / "cli" / f"{run_id}__{digest_json(recipe)[:16]}"
+        write_json(report / "settings.json", {**recipe, "state": "running"})
+        _calculate(config, run_dir, report, widths, grids, pulses)
+        write_json(report / "settings.json", {**recipe, "state": "complete"})
     print(f"Готово | {run_dir}", flush=True)
     return run_dir
 
 
-def _calculate(config, model, model_hash, output, run_dir, widths, bands, pulses, status):
+def _calculate(config, run_dir, report, widths, bands, pulses):
     from matplotlib import use
     use("Agg")
     from .study_plots import StudyPlots
@@ -207,15 +185,13 @@ def _calculate(config, model, model_hash, output, run_dir, widths, bands, pulses
     failures = []
     for i, width in enumerate(widths, start=1):
         width_key = _width_key(width)
-        width_dir = run_dir / f"w_{width_key}"
+        width_dir = report / f"w_{width_key}"
         width_dir.mkdir(exist_ok=True)
         label = f"[{i}/{len(widths)}] w={width_key} мкм"
-        status["widths"][width_key] = "extracting"
-        _write_json(run_dir / "status.json", status)
         tracks, diagnostics, errors = {}, [], []
         for band in BANDS:
             name = f"{label} | {band}"
-            raw = _collect_band(config, model, model_hash, output, width_dir, width, band, bands[band], name)
+            _, raw = load_pair(run_dir / f"w_{width_key}", band, bands[band])
             print(f"{name} | проверка ветвей", flush=True)
             try:
                 tracked = track_modes(
@@ -231,28 +207,25 @@ def _calculate(config, model, model_hash, output, run_dir, widths, bands, pulses
             diagnostics.extend(tracked.rows)
         if diagnostics:
             pd.DataFrame(diagnostics).to_csv(width_dir / "branches.csv", index=False, encoding="utf-8-sig")
-        _write_json(width_dir / "tracking.json", {"errors": errors})
+        write_json(width_dir / "tracking.json", {"errors": errors})
         if errors:
             failures.extend(errors)
-            status["widths"][width_key] = "needs_mode_selection"
         else:
             raw_modes[width] = tracks
-            status["widths"][width_key] = "ready"
-        _write_json(run_dir / "status.json", status)
 
     if failures:
         raise RuntimeError("Проверь ветви и при необходимости задай anchor_solnums. " + " | ".join(failures))
 
     study = fit_study(raw_modes, degrees=tuple(config["degrees"]), pump_wavelength_um=pump)
-    plots = StudyPlots(study, run_dir / "figures", max_plot_points=601, show=False)
+    plots = StudyPlots(study, report / "figures", max_plot_points=601, show=False)
     print("Сохранение графиков дисперсии", flush=True)
     plots.plot_dispersion_by_width()
     if len(widths) > 1:
         plots.plot_dispersion_by_degree()
     for pulse in pulses:
         print(f"{pulse.t_fs:g} фс | расчёт спектров и числа Шмидта", flush=True)
-        pulse_output=analysis_root(run_dir)/'cli'/f't_{pulse.t_fs:g}fs'
-        sweep = run_sweep(study, pulse, pulse_output, length_m=config["length_m"], save_jsa=config["save_jsa"])
+        pulse_output = report / pulse.tag
+        sweep = run_sweep(study, pulse, pulse_output, length_m=config["length_m"])
         plots=StudyPlots(study,pulse_output/"figures",max_plot_points=601,show=False)
         print(f"{pulse.t_fs:g} фс | сохранение графиков", flush=True)
         plots.plot_jsi_by_width(sweep.cases, pulse)
@@ -267,7 +240,7 @@ def _width_key(width):
     return np.format_float_positional(float(width), trim="-")
 
 
-def _run_comsol(config, model, model_hash, output, run_dir, widths, grids, status):
+def _run_comsol(config, model, source, output, run_dir, widths, grids, status):
     failures = []
     completed = 0
     total = len(widths) * len(BANDS)
@@ -279,25 +252,24 @@ def _run_comsol(config, model, model_hash, output, run_dir, widths, grids, statu
         for band in BANDS:
             label = f"[{completed}/{total} готово] w={key} мкм | {band}"
             pair_status[band] = {"state": "running"}
-            _write_json(run_dir / "status.json", status)
+            write_json(run_dir / "status.json", status)
             diagnostic = directory / f"{band}_error.json"
             try:
-                _collect_band(config, model, model_hash, output, directory, width, band, grids[band],
-                              label, require_log=True)
+                _collect_band(config, model, source, output, directory, width, band, grids[band], label)
             except Exception as error:
                 message = f"w={key} мкм, {band}: {error}"
                 failures.append(message)
                 pair_status[band] = {"state": "failed", "error": str(error)}
-                _write_json(diagnostic, {"error": str(error), "traceback": traceback.format_exc()})
+                write_json(diagnostic, {"error": str(error), "traceback": traceback.format_exc()})
                 print(f"{label} | ошибка: {error}", flush=True)
             else:
                 diagnostic.unlink(missing_ok=True)
                 pair_status[band] = {"state": "complete"}
                 completed += 1
                 print(f"[{completed}/{total} готово] w={key} мкм | {band} | сохранено", flush=True)
-            _write_json(run_dir / "status.json", status)
+            write_json(run_dir / "status.json", status)
         status["widths"][key] = "ready" if all(p["state"] == "complete" for p in pair_status.values()) else "failed"
-        _write_json(run_dir / "status.json", status)
+        write_json(run_dir / "status.json", status)
     if failures:
         raise RuntimeError("Незавершённые пары COMSOL: " + " | ".join(failures))
 
@@ -315,57 +287,47 @@ def _validate_raw(raw, grid):
         raise ValueError("Идентификаторы решений повторяются")
 
 
-def _copy_file(source, target):
-    with NamedTemporaryFile(dir=target.parent, suffix=target.suffix, delete=False) as f:
-        temporary = Path(f.name)
-    try:
-        shutil.copyfile(source, temporary)
-        temporary.replace(target)
-    finally:
-        temporary.unlink(missing_ok=True)
-
-
-def _collect_band(config, model, model_hash, output, width_dir, width, band, wavelengths, label,
-                  *, require_log=False):
+def _collect_band(config, model, source, output, width_dir, width, band, wavelengths, label):
     settings = dict(
-        version=EXTRACTION_VERSION, model=model_hash, width=width, band=band,
-        geometry=config["geometry"], wavelengths=wavelengths.tolist(), modes=config["modes"],
+        **source, version=EXTRACTION_VERSION, width_um=width, band=band,
+        geometry=config["geometry"], wavelengths_um=wavelengths.tolist(), modes=config["modes"],
         cores=config["cores"], field_grid=config["field_grid"],
     )
-    checkpoint=width_dir/f'{band}_raw.npz'
-    marker=width_dir/f'{band}_cache_settings.json'
-    matching=marker.is_file() and json.loads(marker.read_text(encoding='utf-8'))==settings
-    log=width_dir/f'{band}_comsol.log'
-    cache_log=log
+    nx, ny = settings["field_grid"]
+    field_id = (f"w{width:g}_{band}_{wavelengths[0]:g}-{wavelengths[-1]:g}um_"
+                f"{len(wavelengths)}pts_{nx}x{ny}__{digest_json(settings)[:16]}")
+    directory = output.parent / "field_maps" / field_id
+    field_file = directory / "field.npz"
+    metadata = directory / "settings.json"
+    signature = dict(**settings, field_id=field_id, model_name=model.name)
     raw = None
-    if matching and checkpoint.is_file() and (not require_log or log.is_file()):
+    if field_file.is_file() and metadata.is_file():
         try:
-            raw = _read_raw(checkpoint)
-            _validate_raw(raw, wavelengths)
+            stored = read_json(metadata)
+            if all(stored.get(key) == value for key, value in settings.items()):
+                raw = _read_raw(field_file)
+                _validate_raw(raw, wavelengths)
+                signature["field_sha256"] = stored["field_sha256"]
         except (ValueError, OSError, KeyError, BadZipFile):
             raw = None
             print(f"{label} | неполный кэш, повторяем расчёт", flush=True)
-        else:
-            print(f"{label} | готовое решение из кэша", flush=True)
-    computed = raw is None
-    if computed:
+    if raw is None:
+        directory.mkdir(parents=True, exist_ok=True)
         raw = solve_modal_fields(
             model, wavelengths, width_um=width, geometry_parameters=config["geometry"],
             modes=config["modes"], cores=config["cores"], field_grid=tuple(config["field_grid"]),
-            log=log, label=label,
+            log=directory / "comsol.log", label=label,
         )
         _validate_raw(raw, wavelengths)
-        if log.is_file() and log!=cache_log:
-            _copy_file(log, cache_log)
-        save_arrays(checkpoint, raw.arrays())
-        _write_json(marker,settings)
-    if not log.is_file() and cache_log.is_file():
-        _copy_file(cache_log, log)
-    if require_log and not log.is_file():
-        raise RuntimeError(f"{label}: COMSOL не сохранил журнал решателя")
-    run_raw = width_dir / f"{band}_raw.npz"
-    if checkpoint!=run_raw and (computed or not run_raw.is_file()):
-        _copy_file(checkpoint, run_raw)
-    if computed or not (width_dir / f"{band}_raw.csv").exists():
-        _save_raw_csv(width_dir / f"{band}_raw.csv", raw)
-    return raw
+        if _solver_source(model) != source:
+            raise RuntimeError("Модель или таблицы материалов изменились во время расчёта COMSOL")
+        save_arrays(field_file, raw.arrays())
+        signature["field_sha256"] = file_hash(field_file)
+        write_json(metadata, signature)
+    else:
+        print(f"{label} | готовое решение из кэша", flush=True)
+    csv = width_dir / f"{band}_raw.csv"
+    _save_raw_csv(csv, raw)
+    write_json(width_dir / f"{band}_field.json", {
+        **signature, "npz": relative_path(width_dir, field_file),
+    })

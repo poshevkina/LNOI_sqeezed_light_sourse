@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from .artifacts import read_json
 from .modes import ModalSolutions, ModeTrackingError, selection_masks, track_modes
 
 
@@ -28,9 +29,18 @@ class ModeInspection:
     anchor_solnums: dict
 
 
+def field_path(directory, band):
+    directory = Path(directory)
+    reference = directory / f"{band}_field.json"
+    if reference.is_file():
+        return (directory / read_json(reference)["npz"]).resolve()
+    # Standalone modal fixtures may place both inputs alongside each other.
+    return directory / f"{band}_raw.npz"
+
+
 def load_pair(directory, band, wavelengths):
     table = pd.read_csv(directory / f"{band}_raw.csv", float_precision="round_trip")
-    with np.load(directory / f"{band}_raw.npz", allow_pickle=False) as file:
+    with np.load(field_path(directory, band), allow_pickle=False) as file:
         raw = ModalSolutions(**{name: file[name] for name in ModalSolutions.__annotations__})
     for column in ("outer_solnum", "solnum"):
         if not np.array_equal(table[column], getattr(raw, column)):
@@ -45,7 +55,7 @@ def load_pair(directory, band, wavelengths):
     return table, raw
 
 
-def inspect_modes(run_dir, *, output_dir=None, tracking=None, anchor_solnums=None):
+def inspect_modes(run_dir, *, output_dir=None, tracking=None, anchor_solnums=None, widths_um=None):
     """Plot every width/band, including rejected points and failed or incomplete pairs."""
     from .interpolation_plots import plot_raw
 
@@ -67,6 +77,8 @@ def inspect_modes(run_dir, *, output_dir=None, tracking=None, anchor_solnums=Non
     all_modes, coverage, raw_frames, selection_frames, branch_frames = {}, [], [], [], []
     for key, bands in sorted(states.items(), key=lambda pair: float(pair[0])):
         width = float(key)
+        if widths_um is not None and width not in widths_um:
+            continue
         directory = output / f"w_{width:g}"
         directory.mkdir(exist_ok=True)
         raw_tables, branches, tracks = {}, {}, {}

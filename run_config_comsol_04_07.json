@@ -1,0 +1,32 @@
+{
+  "model": "god_save_me_compact.mph",
+  "output_dir": "results",
+  "widths_um": [
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.7
+  ],
+  "geometry": {},
+  "bands": {
+    "PUMP": {
+      "start_um": 0.725,
+      "stop_um": 0.825,
+      "points": 21
+    },
+    "IS": {
+      "start_um": 1.45,
+      "stop_um": 1.65,
+      "points": 21
+    }
+  },
+  "modes": null,
+  "cores": 2,
+  "field_grid": [
+    81,
+    61
+  ],
+  "pump_wavelength_um": 0.775
+}

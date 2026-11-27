@@ -73,7 +73,7 @@ def ensure_hybridization(run_dir,spatial,output,pulse,*,fraction=.99,mixing_limi
 
 def run_pulse_series(run_dir,spatial,windows=None,*,points=1501,fraction=.99,mixing_limit=.1,
                      calculate=True,progress=True,write_index=True):
-    """Store full JSI, K and field audit, but do not render/display any figures.
+    """Store spectral summaries, K and field audit, but do not render/display any figures.
 
     Existing per-case numerical caches are reusable after interruption; summary and
     state='complete' are committed only after run_sweep has completed a duration.
@@ -178,10 +178,7 @@ def plot_pulse_k_grid(run_dir,spatial,windows,*,points=1501,figsize=(24,11),dpi=
 
 def plot_k_duration_by_width(run_dir,spatial,windows,*,points=1501,figsize=(18,10),dpi=70):
     """K versus duration, three columns, physical mode labels and both flags."""
-    from matplotlib import pyplot as plt
-    from .spatial_workflow import label_key
-    widths=list(spatial.study.widths)
-    if not widths or not windows:raise ValueError('Нет ширин или длительностей')
+    if not windows:raise ValueError('Нет длительностей')
     frames=[]
     for duration,dw in sorted(windows.items()):
         pulse=pulse_config(duration,dw,points);folder=pulse_directory(run_dir,spatial,pulse)
@@ -191,11 +188,21 @@ def plot_k_duration_by_width(run_dir,spatial,windows,*,points=1501,figsize=(18,1
         frame=frame.merge(flags[['width_um','pump_label','pump_interval_hybrid']],
             on=['width_um','pump_label'],validate='one_to_one')
         frames.append(frame)
-    table=pd.concat(frames,ignore_index=True)
-    labels=sorted(spatial.study.pump_labels,key=label_key)
+    folder = analysis_root(run_dir) / 'pulses'
+    folder.mkdir(exist_ok=True, parents=True)
+    return plot_duration_summary(pd.concat(frames, ignore_index=True), folder / 'K_vs_duration.png',
+                                 figsize=figsize, dpi=dpi)
+
+
+def plot_duration_summary(table, path, *, figsize=(18, 10), dpi=70):
+    """Plot the combined summary without access to the COMSOL dataset."""
+    from matplotlib import pyplot as plt
+    from .spatial_workflow import label_key
+    widths = sorted(table.width_um.unique())
+    labels = sorted(table.pump_label.unique(), key=label_key)
     colors={label:plt.get_cmap('tab10')(i) for i,label in enumerate(labels)}
     fig,axes=plt.subplots((len(widths)+2)//3,3,figsize=figsize,dpi=dpi,squeeze=False,layout='constrained')
-    handles={};durations=sorted(windows)
+    handles={};durations=sorted(table.t_fs.unique())
     try:
         for ax,width in zip(axes.flat,widths):
             for label in labels:
@@ -213,8 +220,6 @@ def plot_k_duration_by_width(run_dir,spatial,windows,*,points=1501,figsize=(18,1
         for ax in list(axes.flat)[len(widths):]:ax.set_visible(False)
         fig.legend(list(handles.values()),list(handles),loc='outside lower center',ncol=3,fontsize=12)
         fig.suptitle('Число Шмидта от длительности импульса',fontsize=18)
-        folder=analysis_root(run_dir)/'pulses'
-        folder.mkdir(exist_ok=True,parents=True)
-        path=folder/'K_vs_duration.png'
-        fig.savefig(path,dpi=dpi);plt.show();return path
+        fig.savefig(path,dpi=dpi)
+        return path
     finally:plt.close(fig)

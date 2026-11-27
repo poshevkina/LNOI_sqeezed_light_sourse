@@ -131,11 +131,15 @@ class StudyPlots:
     def jsi_panel(self, ax, result):
         with np.load(result["cache_path"], allow_pickle=False) as saved:
             grid = saved["lmb_grid"]
+            if "plot_jsi" in saved:
+                grid = grid[saved["preview_indices"]]
+                image = saved["plot_jsi"]
+            else:
+                image = saved["IMatrix"]
             count = len(grid) if self.max_plot_points is None else min(self.max_plot_points, len(grid))
-            indices = np.unique(np.linspace(0, len(grid) - 1, count, dtype=int))
-            image = saved["IMatrix"][np.ix_(indices, indices)]
-        mesh = ax.pcolormesh(grid[indices], grid[indices], image,
-                             shading="auto", cmap="inferno", vmin=0, vmax=1, rasterized=True)
+            indices = np.linspace(0, len(grid) - 1, count, dtype=int)
+            mesh = ax.pcolormesh(grid[indices], grid[indices], image[np.ix_(indices, indices)],
+                                 shading="auto", cmap="inferno", vmin=0, vmax=1, rasterized=True)
         ax.set(xlabel=r"$\lambda_s$, нм", ylabel=r"$\lambda_i$, нм")
         return mesh
 

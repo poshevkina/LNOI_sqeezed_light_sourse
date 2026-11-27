@@ -10,9 +10,12 @@ from linbo3.spatial_workflow import prepare_spatial_study,run_spatial_study
 
 class OverwriteStorage(unittest.TestCase):
  def tearDown(self):set_profile('main')
- def test_comsol_one_current_dataset_without_duplicate_cache(self):
+ def test_comsol_runs_preserve_history_and_reuse_pairs(self):
+  from linbo3.comsol import MATERIAL_TABLES
+  from linbo3.saved_modes import load_pair
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp);(root/'model.mph').write_bytes(b'model')
+   for table in MATERIAL_TABLES.values():(root/table).write_text('material')
    cfg=dict(model='model.mph',output_dir='results',widths_um=[.5,.7],geometry={},
     bands={'PUMP':dict(start_um=.7,stop_um=.85,points=9),'IS':dict(start_um=1.4,stop_um=1.7,points=9)},
     modes=None,cores=2,field_grid=[2,2],pump_wavelength_um=.775)
@@ -22,14 +25,22 @@ class OverwriteStorage(unittest.TestCase):
    with patch('linbo3.pipeline.solve_modal_fields',side_effect=solve) as solver:
     path.write_text(json.dumps(cfg));first=run(path,stage='comsol');self.assertEqual(solver.call_count,4)
     self.assertEqual(run(path,stage='comsol'),first);self.assertEqual(solver.call_count,4)
-    (first/'analysis').mkdir();(first/'analysis/stale').write_text('old')
     cfg['widths_um']=[.5,.7,.9];path.write_text(json.dumps(cfg))
-    self.assertEqual(run(path,stage='comsol'),first);self.assertEqual(solver.call_count,6)
-    self.assertFalse((first/'analysis').exists())
-    self.assertEqual(len(list((root/'results').glob('*'))),1)
-    self.assertEqual(len(list(first.rglob('*.npz'))),6)
-    cfg['widths_um']=[.5];path.write_text(json.dumps(cfg));run(path,stage='comsol')
-    self.assertEqual(len(list(first.glob('w_*'))),1)
+    second=run(path,stage='comsol');self.assertEqual(solver.call_count,6)
+    self.assertNotEqual(first,second)
+    self.assertTrue((first/'w_0.5'/'PUMP_raw.csv').is_file())
+    self.assertEqual(len(list((root/'field_maps').glob('*/field.npz'))),6)
+    self.assertFalse(list((root/'results').rglob('*.npz')))
+    a=json.loads((first/'w_0.5'/'PUMP_field.json').read_text(encoding='utf-8'))
+    b=json.loads((second/'w_0.5'/'PUMP_field.json').read_text(encoding='utf-8'))
+    self.assertEqual(a['field_id'],b['field_id'])
+    self.assertIn('w0.5_PUMP_0.7-0.85um_9pts_2x2',a['field_id'])
+    _,raw=load_pair(second/'w_0.5','PUMP',a['wavelengths_um'])
+    self.assertEqual(raw.field.shape,(27,3,4))
+    (root/'n_SiO2.txt').write_text('new material')
+    third=run(path,stage='comsol');self.assertEqual(solver.call_count,12)
+    self.assertNotEqual(second,third)
+    self.assertTrue((second/'status.json').is_file())
  def test_python_new_grid_replaces_old_and_profiles_are_isolated(self):
   with tempfile.TemporaryDirectory() as tmp:
    raw=write_saved_run(Path(tmp)/'run');spatial=prepare_spatial_study(raw,classification_table())

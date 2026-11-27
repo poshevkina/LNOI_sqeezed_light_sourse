@@ -63,6 +63,10 @@ def marginal_densities(omega,jsi):
         raise ValueError('Суммирование рассчитано на равномерную сетку ω')
     signal=jsi.sum(axis=0)*spacing[0]
     idler=jsi.sum(axis=1)*spacing[0]
+    return _densities_from_marginals(omega, signal, idler)
+
+
+def _densities_from_marginals(omega, signal, idler):
     # Vacuum wavelength in nm; use the same rounded c as the rest of the project.
     constant=2*np.pi*LIGHT_SPEED_M_PER_FS*1e9
     wavelength=constant/omega
@@ -81,7 +85,7 @@ def _width_text(value,unit):
 
 
 def plot_marginal_spectra(run_dir,spatial,output,*,points=1501,dpi=150,cache_dir=None,title=None):
-    """Read the full cached IMatrix, not the thinned image; no spectrum solver runs."""
+    """Use exact marginal spectra precomputed on the full grid."""
     run_dir,output=Path(run_dir),Path(output)
     if not spatial_saved_is_current(run_dir,spatial,points,allow_cached_subset=True,output_dir=Path(cache_dir).parent if cache_dir is not None else output):
         raise ValueError('Сначала выполни расчёт JSI/K в разделе 5 с текущими параметрами')
@@ -96,9 +100,12 @@ def plot_marginal_spectra(run_dir,spatial,output,*,points=1501,dpi=150,cache_dir
     for width,mapping in spatial.study.pump_map.items():
         for label,block in mapping.items():
             path,pulse=cached_case(cache_dir,spatial,width,label,summary,manifest,points)
-            if not path.is_file():raise FileNotFoundError('Нет полной JSI в кэше; выполни раздел 5 с RUN_STUDY=True: '+str(path))
+            if not path.is_file():raise FileNotFoundError('Нет спектрального случая в кэше; выполни раздел 5 с RUN_STUDY=True: '+str(path))
             with np.load(path,allow_pickle=False) as saved:
-                spectra=marginal_densities(saved['w_grid'],saved['IMatrix'])
+                if "S_s" in saved and "S_i" in saved:
+                    spectra = _densities_from_marginals(saved["w_grid"], saved["S_s"], saved["S_i"])
+                else:
+                    spectra = marginal_densities(saved["w_grid"], saved["IMatrix"])
             for coordinate,xkey in (('omega','omega'),('wavelength','wavelength_nm')):
                 for role in ('signal','idler'):
                     result=fwhm(spectra[xkey],spectra[f'{role}_{coordinate}'])

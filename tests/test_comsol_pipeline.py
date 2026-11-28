@@ -27,7 +27,7 @@ class ComsolPipeline(unittest.TestCase):
         for table in MATERIAL_TABLES.values():
             (self.root / table).write_text("material", encoding="utf-8")
         self.config = self.write_config("one.json", widths=[0.5])
-        self.solver = self.enterContext(patch("linbo3.pipeline.solve_modal_fields", side_effect=self.solve))
+        self.solver = self.enterContext(patch("linbo3.comsol_models.single.solve_modal_fields", side_effect=self.solve))
 
     def write_config(self, name, *, widths):
         path = self.root / name
@@ -85,7 +85,7 @@ class ComsolPipeline(unittest.TestCase):
         self.assertEqual(file_hash(field), read_json(width_dir / "PUMP_field.json")["field_sha256"])
 
     def test_resume_rebuilds_csv_from_committed_map(self):
-        with patch("linbo3.pipeline._save_raw_csv", side_effect=KeyboardInterrupt):
+        with patch("linbo3.comsol_models.cache._save_raw_csv", side_effect=KeyboardInterrupt):
             with self.assertRaises(KeyboardInterrupt):
                 run(self.config)
         run_dir = next((self.root / "results" / "comsol").iterdir())
@@ -118,7 +118,8 @@ class ComsolPipeline(unittest.TestCase):
 
         self.solver.side_effect = solve
         with (
-            patch("linbo3.pipeline.file_lock", side_effect=observe_lock),
+            patch("linbo3.comsol_jobs.file_lock", side_effect=observe_lock),
+            patch("linbo3.comsol_models.cache.file_lock", side_effect=observe_lock),
             ThreadPoolExecutor(1) as first_pool,
             ThreadPoolExecutor(1, thread_name_prefix="other-run") as other_pool,
         ):

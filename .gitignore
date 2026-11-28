@@ -25,4 +25,4 @@ Thumbs.db
 /results/studies/.lock-*
 
 # COMSOL run locks.
-/results/comsol/*/.run.lock
+/results/comsol/**/.run.lock

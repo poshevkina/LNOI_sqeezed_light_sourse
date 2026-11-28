@@ -72,6 +72,6 @@
   },
   "run_id": "w0.4-0.7um_6widths__58b445c501cca79a",
   "stage": "comsol",
-  "model": "../../../god_save_me_compact.mph",
+  "model": "../../../linbo3/comsol_models/single/god_save_me_compact.mph",
   "model_path_base": "run_dir"
 }

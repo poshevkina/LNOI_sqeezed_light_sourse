@@ -50,6 +50,12 @@ class CoupledModelCache(unittest.TestCase):
                 self.assertNotEqual(first.run_dir, extended.run_dir)
                 self.assertEqual(model.modes(gaps_um=[.9, .8], **other_name).run_dir, extended.run_dir)
                 self.assertEqual(solve.call_count, 2)
+                with self.assertRaisesRegex(RuntimeError, "нет|Нет"):
+                    model.modes(gaps_um=[.8], **other_name, neff_shift=1.8)
+                shifted = model.modes(gaps_um=[.8], **other_name, neff_shift=1.8, solve=True)
+                self.assertNotEqual(shifted.run_dir, first.run_dir)
+                self.assertEqual(solve.call_count, 3)
+                self.assertEqual(solve.call_args.args[4], 1.8)
             with patch("linbo3.comsol_models.cache.load_modal_npz", side_effect=AssertionError("Unexpected field read")):
                 table = extended.load_modes()
             self.assertEqual(table.gap_um.tolist(), [.8, .8, .9, .9])

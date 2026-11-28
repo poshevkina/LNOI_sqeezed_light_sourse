@@ -11,7 +11,7 @@ if __package__ in (None, ""):
 from linbo3.artifacts import read_json
 from linbo3.comsol_models import SingleWaveguide2D
 from studies import fit_effect
-from studies._common import PROJECT_ROOT, study_main
+from studies._common import study_main
 
 
 STUDY_NAME = "fit-effect-w04-w07"
@@ -24,7 +24,7 @@ PUMP_WAVELENGTH_UM = 0.775
 
 
 def prepare_comsol(results_root, *, solve=False, dry_run=False):
-    model = SingleWaveguide2D(PROJECT_ROOT / "god_save_me_compact.mph", results_root=results_root)
+    model = SingleWaveguide2D(results_root=results_root)
     return model.modes(widths_um=WIDTHS_UM, bands=BANDS, pump_wavelength_um=PUMP_WAVELENGTH_UM,
                        solve=solve, dry_run=dry_run)
 

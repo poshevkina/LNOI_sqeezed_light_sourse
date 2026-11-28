@@ -5,16 +5,19 @@ from pathlib import Path
 
 import numpy as np
 
-from ..comsol_session import open_model, solve_study
-from ..modes import ModalSolutions
-from .modal import extract_modes, import_materials
+from ...comsol_session import open_model, solve_study
+from ...modes import ModalSolutions
+from ..modal import extract_modes, import_materials
+from ..paths import material_directory
 
 
+MODEL_DIR = Path(__file__).resolve().parent
 MATERIAL_TABLES = {"int1": "n_SiO2.txt", "int2": "no_LiNbO3.txt", "int3": "ne_LiNbO3.txt"}
 
 
 def _import_project_materials(model, model_file):
-    import_materials(model, model_file, MATERIAL_TABLES, component="comp1")
+    directory = material_directory(model_file, MODEL_DIR)
+    import_materials(model, directory, MATERIAL_TABLES, component="comp1")
 
 
 @contextmanager

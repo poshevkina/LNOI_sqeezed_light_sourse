@@ -27,7 +27,7 @@ class ComsolPipeline(unittest.TestCase):
         for table in MATERIAL_TABLES.values():
             (self.root / table).write_text("material", encoding="utf-8")
         self.config = self.write_config("one.json", widths=[0.5])
-        self.solver = self.enterContext(patch("linbo3.comsol_models.single.solve_modal_fields", side_effect=self.solve))
+        self.solver = self.enterContext(patch("linbo3.comsol_models.single.model.solve_modal_fields", side_effect=self.solve))
 
     def write_config(self, name, *, widths):
         path = self.root / name

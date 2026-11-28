@@ -91,7 +91,8 @@ def _save_raw_csv(path, raw):
     write_csv(path, table, encoding="utf-8-sig", na_rep="NaN")
 
 
-def run_modal(run_dir, manifest, tasks, *, source, fingerprint, solve=False, dry_run=False, status_summary="groups"):
+def run_modal(run_dir, manifest, tasks, *, source, fingerprint, solve=False, dry_run=False, status_summary="groups",
+              allow_partial=False):
     result = ModalRun(run_dir, tuple(tasks))
     if dry_run or not solve:
         checksums = [_valid_checksum(task) for task in result.tasks]
@@ -101,6 +102,8 @@ def run_modal(run_dir, manifest, tasks, *, source, fingerprint, solve=False, dry
                 print(f"{task.label} | {'кэш' if checksum else 'нет проверенной карты'}")
             return result
         missing = [task.label for task, checksum in zip(result.tasks, checksums, strict=True) if not checksum]
+        if missing and allow_partial:
+            return result
         if missing:
             raise RuntimeError("Нет готовых карт для " + ", ".join(missing) + ". Для досчёта добавь --solve.")
         if ((run_dir / "status.json").is_file() and read_json(run_dir / "status.json")["state"] == "complete"

@@ -5,11 +5,13 @@ from pathlib import Path
 
 import numpy as np
 
-from ..artifacts import digest_json, file_hash, relative_path
-from .cache import ModalTask, run_modal
-from .single_solver import MATERIAL_TABLES, solve_modal_fields
+from ...artifacts import digest_json, file_hash, relative_path
+from ..cache import ModalTask, run_modal
+from ..paths import material_directory
+from .solver import MATERIAL_TABLES, MODEL_DIR, solve_modal_fields
 
 
+MODEL_PATH = MODEL_DIR / "god_save_me_compact.mph"
 EXTRACTION_VERSION = 2
 
 
@@ -55,14 +57,15 @@ def _solver_grids(config):
 
 
 class SingleWaveguide2D:
-    def __init__(self, model_path, *, results_root="results"):
+    def __init__(self, model_path=MODEL_PATH, *, results_root="results"):
         self.model_path = Path(model_path).resolve(strict=True)
         self.results_root = Path(results_root).resolve()
 
     def _fingerprint(self):
+        directory = material_directory(self.model_path, MODEL_DIR)
         return {
             "model_sha256": file_hash(self.model_path),
-            "material_sha256": {name: file_hash(self.model_path.parent / name) for name in MATERIAL_TABLES.values()},
+            "material_sha256": {name: file_hash(directory / name) for name in MATERIAL_TABLES.values()},
         }
 
     def modes(self, *, widths_um, bands, pump_wavelength_um, field_grid=(81, 61),

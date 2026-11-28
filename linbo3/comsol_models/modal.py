@@ -1,14 +1,11 @@
 """Shared 2D modal sampling for studies that export n_eff and complex fields."""
 
-from pathlib import Path
-
 import numpy as np
 
 from ..modes import ModalSolutions
 
 
-def import_materials(model, model_file, materials, *, component):
-    directory = Path(model_file).resolve().parent
+def import_materials(model, directory, materials, *, component):
     for filename in materials.values():
         if not (directory / filename).is_file():
             raise FileNotFoundError(directory / filename)

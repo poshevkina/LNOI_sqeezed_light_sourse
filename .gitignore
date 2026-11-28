@@ -25,4 +25,16 @@ Thumbs.db
 /results/studies/.lock-*
 
 # COMSOL run locks.
-/results/comsol/*/.run.lock
+/results/comsol/**/.run.lock
+
+# Derived COMSOL template and local equivalence runs.
+/linbo3/comsol_models/coupled/coupled_waveguides_2d_clean.mph
+/results/verification/coupled_clean/
+/linbo3/comsol_models/coupler_3d/lnoi_coupler_3d_ports.mph
+
+# Local source models and generated coupler reports.
+/linbo3/comsol_models/coupled/coupled_waveguides_2d_original.mph
+/linbo3/comsol_models/coupler_3d/lnoi_coupler_3d.mph
+/results/comsol/coupled-waveguides-2d/
+/results/studies/coupled-modes/
+/results/studies/coupler-3d*/

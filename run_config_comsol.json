@@ -1,5 +1,5 @@
 {
-  "model": "god_save_me_compact.mph",
+  "model": "linbo3/comsol_models/single/god_save_me_compact.mph",
   "output_dir": "results",
   "widths_um": [
     0.5,

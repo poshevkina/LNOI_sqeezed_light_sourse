@@ -31,7 +31,7 @@ def resolve_comsol_run(results_root, name=None, *, required_widths=()):
     return path.parent
 
 
-def study_main(description, run, *, points, results_root, comsol_run=None, required_widths=()):
+def study_main(description, run, *, points, results_root, comsol_run=None, required_widths=(), prepare_comsol=None):
     from matplotlib import use
 
     parser = argparse.ArgumentParser(description=description)
@@ -40,14 +40,23 @@ def study_main(description, run, *, points, results_root, comsol_run=None, requi
     source.add_argument("--comsol-dir", type=Path, help="Явный путь к сохранённому прогону")
     parser.add_argument("--results-root", type=Path, default=results_root, help="Корень отчётов и кэша")
     parser.add_argument("--points", type=int, default=points, help="Размер частотной сетки")
+    if prepare_comsol is not None:
+        source.add_argument("--solve", action="store_true", help="Досчитать недостающие точки в COMSOL")
+        source.add_argument("--dry-run", action="store_true", help="Показать точки и состояние кэша")
     args = parser.parse_args()
     if args.points < 5:
         parser.error("--points: нужно минимум 5 точек")
     use("Agg")
     try:
-        source = args.comsol_dir or resolve_comsol_run(
-            args.results_root, args.comsol_run or comsol_run, required_widths=required_widths,
-        )
+        if prepare_comsol is not None and not (args.comsol_dir or args.comsol_run or comsol_run):
+            prepared = prepare_comsol(args.results_root, solve=args.solve, dry_run=args.dry_run)
+            if args.dry_run:
+                return
+            source = prepared.run_dir
+        else:
+            source = args.comsol_dir or resolve_comsol_run(
+                args.results_root, args.comsol_run or comsol_run, required_widths=required_widths,
+            )
         output = run(source.resolve(), args.results_root.resolve(), points=args.points)
     except (OSError, ValueError, RuntimeError) as error:
         parser.exit(1, f"Ошибка: {error}\n")

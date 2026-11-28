@@ -22,7 +22,7 @@ class OverwriteStorage(unittest.TestCase):
    path=root/'config.json'
    def solve(model,wavelengths,**kw):
     kw['log'].write_text('complete');return modal_fixture('PUMP' if wavelengths[0]<1 else 'IS')
-   with patch('linbo3.pipeline.solve_modal_fields',side_effect=solve) as solver:
+   with patch('linbo3.comsol_models.single.model.solve_modal_fields',side_effect=solve) as solver:
     path.write_text(json.dumps(cfg));first=run(path,stage='comsol');self.assertEqual(solver.call_count,4)
     self.assertEqual(run(path,stage='comsol'),first);self.assertEqual(solver.call_count,4)
     cfg['widths_um']=[.5,.7,.9];path.write_text(json.dumps(cfg))
